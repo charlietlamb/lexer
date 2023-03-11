@@ -1,5 +1,5 @@
 // header file for the lexer module
-#define TEST		// uncomment this line to run the self-grader
+//#define TEST		// uncomment this line to run the self-grader
 
 
 
@@ -27,4 +27,4 @@ Token GetNextToken ();
 Token PeekNextToken ();
 int StopLexer ();
 
-
+//need to remove /n from current and make seg fault not happen when test runs.

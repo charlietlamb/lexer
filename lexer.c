@@ -31,6 +31,7 @@ Date Work Commenced: Feb 2023
 // define total lines as global variable
 // reset totalLines each time
 
+
 int totalFiles = 0;
 int counter = 0;
 int charsCounter;
@@ -47,7 +48,7 @@ char** getStrings(char* path);
 char** getDir(char* path);
 char* getTokens(char**file,int limit, char* path);
 bool isFinished(char thisChar, char nextChar, bool firstDigit, int stringCount, char nextNextChar);
-char* getType(char* current, char nextChar, bool stringStart, bool longComment, bool EOFile);
+char *getType(char *current, char nextChar, int stringCount, bool longComment, bool EOFile);
 char* createToken(char* current,char* file, int lineNumber, char* tokenType, char *tokenString);
 bool create(char* current);
 bool isSymbolRet(char thisChar);
@@ -72,10 +73,14 @@ Token *make(char* tokens);
 int fileCount = 0;
 int tokenCount = 0;
 int fileNum =0;
-Token *tokenArray;
+Token *myTokenArray;
 int lineCount;
 char**files;
 bool gotFiles = false;
+
+//for testing
+void myPrintToken (Token t);
+char* myTokenTypeString (TokenType t);
 
 // IMPLEMENT THE FOLLOWING functions
 //***********************************
@@ -124,20 +129,19 @@ int InitLexer(char *file_name)
             lineCount++;
         }
     }
-    tokenArray = malloc(sizeof(Token) * lineCount);
-    tokenArray = make(tokTemp);
+    myTokenArray = malloc(sizeof(Token) * lineCount);
+    myTokenArray = make(tokTemp);
     for (int j=0;j<lineCount;j++){
         
         counter = 0;
         charsCounter = 0;
         
-        //printf("%d\n",tokenArray->ln);
-        tokenArray++;
+        //printf("%d\n",myTokenArray->ln);
         
     }
     fileNum++;
     
-    
+    tokenCount=0;
     return 1;
 }
 
@@ -145,7 +149,7 @@ int InitLexer(char *file_name)
 Token GetNextToken()
 {
     if(lineCount >= tokenCount){
-        Token t = tokenArray[tokenCount];
+        Token t = myTokenArray[tokenCount];
         tokenCount++;
         return t;
     }else{
@@ -159,7 +163,7 @@ Token GetNextToken()
 Token PeekNextToken()
 {
     if(lineCount >= tokenCount){
-        Token t = tokenArray[tokenCount];
+        Token t = myTokenArray[tokenCount];
         return t;
     }else{
         Token t;
@@ -178,56 +182,37 @@ int StopLexer()
 // do not remove the next line
 #ifndef TEST
 
+void myPrintToken (Token t)
+{
+	printf ("<%s, %i, %s, %s>\n", t.fl, t.ln , t.lx, myTokenTypeString (t.tp));
+}
+
+char* myTokenTypeString (TokenType t)
+{
+	switch (t)
+	{
+		case RESWORD: return "RESWORD";
+		case ID: return "ID";
+		case INT: return "INT";
+		case SYMBOL: return "SYMBOL";
+		case STRING: return "STRING";
+		case EOFile: return "EOFile";
+		case ERR: return "ERR";
+		default: return "Not a recognised token type";
+	}
+
+}
+
 int main(int argc, char *argv[])
 {
-    InitLexer("Ball.jack");
-
-    /*
-    // implement your main function here
-    // NOTE: the autograder will not use your main function
-    char *path = malloc(sizeof(char *) * MORE_MEMORY);
-    strcpy(path, argv[1]);
-
-    char **dir = getDir(path);
-    char **tokens;
-    masterArray = malloc(sizeof(Token *) * totalFiles * 1024);
-    int masterCount = 0;
-    tokens = malloc(sizeof(char *) * MORE_MEMORY);
-    for (int j = 0; j < totalFiles; j++)
-    {
-        // printf("\nNEW FILE\n\n");
-        char **file;
-        char name[1024];
-        char *folder = argv[1];
-        folder[strlen(folder)] = '\0';
-        strcpy(name, folder);
-        strcat(name, "/");
-        char temp[1024];
-        strcpy(temp, dir[j]);
-        strcat(name, temp);
-        file = getStrings(name);
-
-        char *tokTemp = malloc(sizeof(getTokens(file, counter, dir[j])) + 1);
-
-        tokTemp = getTokens(file, counter, dir[j]);
-        // printf("%s",tokTemp);
-        // strcpy(tokens[j],tokTemp);
-        int lineCount = 0;
-        int stringLength = strlen(tokTemp);
-        for (int i = 0; i < stringLength; i++)
-        {
-            if (tokTemp[i] == '\n')
-            {
-                lineCount++;
-            }
-        }
-        Token *tokenArray = malloc(sizeof(Token) * lineCount);
-        tokenArray = make(tokTemp);
-        counter = 0;
-        charsCounter = 0;
-        masterArray[masterCount] = tokenArray;
-        masterCount++;
-    }*/
+	InitLexer ("IntegersOnly.jack");
+	Token t = GetNextToken ();
+	while (t.tp != EOFile)
+	{
+        myPrintToken (t);
+		t = GetNextToken();
+	}
+	
     
 }
 // do not remove the next line
@@ -244,99 +229,131 @@ Token *make(char *tokens)
             lineCount++;
         }
     }
-    Token *tokenArray = malloc(sizeof(Token) * lineCount);
+    myTokenArray = malloc(sizeof(Token) * lineCount);
     char *saveString, *saveAtt;
     int tokenCount = 0;
     char delim[2] = "\n";
     char *string;
+    bool comma = false;
     string = strtok_r(tokens, delim, &saveString);
-    int len = strlen(string);
-    string[len - 2] = '\0';
-    string += 2;
+    
     while (string != NULL)
     {
         if (string != NULL)
         {
+            
             Token t;
             int len = strlen(string);
-            string[len - 2] = '\0';
+            string[len-2] = '\0';
             string += 2;
+            
             char *att; // current attribute
-            char delim2[3] = ", ";
+            char delim2[3] = ",";
             att = strtok_r(string, delim2, &saveAtt);
+            
+            
             if (att != NULL)
             {
-                strcpy(tokenArray[tokenCount].fl, att);
+                if(att[0] == '.'&&att[1]=='/'){
+                    att +=2;
+                }
+                
+                strcpy(t.fl, att);
                 att = strtok_r(NULL, delim2, &saveAtt);
+                att++;
+                
             }
             if (att != NULL)
             {
-                tokenArray[tokenCount].ln = atoi(att);
+                t.ln = atoi(att);
                 att = strtok_r(NULL, delim2, &saveAtt);
+                att++;
+                
             }
             if (att != NULL)
             {
-                strcpy(tokenArray[tokenCount].lx, att);
-                att = strtok_r(NULL, delim2, &saveAtt);
+                
+                if(strlen(att)==0){
+                    strcpy(t.lx,",");
+                    comma = true;
+                    t.ln++;
+                }else{
+                    strcpy(t.lx, att);
+                    att = strtok_r(NULL, delim2, &saveAtt);
+                    att++;
+                }
+                
             }
-            att = strtok_r(NULL, delim2, &saveAtt);
+            
             if (att != NULL)
             {
-
-                if (strcmp(att, "RESWORD"))
+                if (!strcmp(att, "RESWORD"))
                 {
-                    tokenArray[tokenCount].tp = RESWORD;
+                    t.tp = RESWORD;
+                    t.ln++;
                 }
-                if (strcmp(att, "ID"))
+                if (!strcmp(att, "ID"))
                 {
-                    tokenArray[tokenCount].tp = ID;
+                    t.tp = ID;
+                    t.ln++;
                 }
-                if (strcmp(att, "INT"))
+                if (!strcmp(att, "INT"))
                 {
-                    tokenArray[tokenCount].tp = INT;
+                    t.tp = INT;
+                    t.ln++;
                 }
-                if (strcmp(att, "SYMBOL"))
+                if (!strcmp(att, "SYMBOL"))
                 {
-                    tokenArray[tokenCount].tp = SYMBOL;
+                    t.tp = SYMBOL;
+                    t.ln++;
                 }
-                if (strcmp(att, "STRING"))
+                if (!strcmp(att, "STRING"))
                 {
-                    tokenArray[tokenCount].tp = STRING;
+                    t.tp = STRING;
+                    t.ln++;
                 }
-                if (strcmp(att, "EOFile"))
+                if (!strcmp(att, "EOFile"))
                 {
-                    tokenArray[tokenCount].tp = EOFile;
+                    t.tp = EOFile;
                 }
-                if (strcmp(att, "ERR"))
+                if (!strcmp(att, "ERR"))
                 {
-                    tokenArray[tokenCount].tp = ERR;
-                    if (strcmp(tokenArray[tokenCount].lx, "Error: unexpected eof in comment"))
+                    t.tp = ERR;
+                    if (!strcmp(t.lx, "Error: unexpected eof in comment"))
                     {
-                        tokenArray[tokenCount].ec = 1;
+                        t.ec = 1;
+                        t.ln++;
                     }
-                    if (strcmp(tokenArray[tokenCount].lx, "Error: unexpected eof in string constant"))
+                    if (!strcmp(t.lx, "Error: unexpected eof in string constant"))
                     {
-                        tokenArray[tokenCount].ec = 2;
+                        t.ec = 2;
                     }
-                    if (strcmp(tokenArray[tokenCount].lx, "Error: unexpected eof in string constant"))
+                    if (!strcmp(t.lx, "Error: unexpected eof in string constant"))
                     {
-                        tokenArray[tokenCount].ec = 3;
+                        t.ec = 3;
                     }
-                    if (strcmp(tokenArray[tokenCount].lx, "Error: illegal symbol in source file"))
+                    if (!strcmp(t.lx, "Error: illegal symbol in source file"))
                     {
-                        tokenArray[tokenCount].ec = 4;
+                        t.ec = 4;
                     }
                 }
                 else
                 {
-                    tokenArray[tokenCount].ec = 0;
+                    t.ec = 0;
+                }
+                if(comma){
+                    t.tp = SYMBOL;
+                    comma = false;
                 }
             }
+            myTokenArray[tokenCount] = t;
+            //printf("%s\n",tokenArray[tokenCount].lx);
         }
+        
         tokenCount++;
         string = strtok_r(NULL, delim, &saveString);
     }
-    return tokenArray;
+    return myTokenArray;
 }
 
 char *getTokens(char **file, int limit, char *path)
@@ -369,27 +386,27 @@ char *getTokens(char **file, int limit, char *path)
     bool EOFile = false;
     bool error = false;
     bool empty;
+    bool illegalSymbol = false;
     int stringCount = 0; // used to see when "" start and close
 
-    for (int i = 0; i < limit+1; i++)
+    for (int i = 0; i < limit; i++)
     {        
         
         // prevents eof error
         
         // checks that line exists
+        line = (file[i]);
         if (line != NULL)
         {
-            line = (file[i]);
+            //current[0]=thisChar;
+            //current[1]='\0';
             empty = true;
             int len = strlen(line);
-            printf("TEST\n");
             for(int k=0;k<len;k++){
                 if(line[k]!=' '){
-                    printf("not money\n");
                     empty = false;
                 }
             }
-            printf("%s",line);
             if (!strchr(line, '\n'))
             {
                 strcat(line, "\n");
@@ -404,16 +421,12 @@ char *getTokens(char **file, int limit, char *path)
             nextChar = 'a';
             // iterates through characters in line
             skip = false;
-            if (line[0] == '"')
-            {
-                stringCount = 1;
-            }
             if (isSymbolRet(line[0]) && (line[0] != '/' && line[0] != '*') && (!commentMode))
             {
                 char *add;
                 char *tokenString = malloc(sizeof(char) * 1024);
                 char tempStr[2] = {line[0], '\0'};
-                add = createToken(tempStr, path, lineNum, getType(current, nextChar, stringStart, longComment, EOFile), tokenString);
+                add = createToken(tempStr, path, lineNum, "SYMBOL", tokenString);
                 strcat(tokens, add);
                 free(tokenString);
                 strcpy(current, "\0");
@@ -421,12 +434,10 @@ char *getTokens(char **file, int limit, char *path)
             }
             if (strchr(line, '\n')==NULL && strchr(line, '\0')==NULL)
             {
-                printf("YESS");
                 line[strlen(line)] = '\0';
             }
             if(empty){
-                thisChar=='\0';
-                printf("sui\n");
+                thisChar='\0';
             }
             while ((thisChar != '\n' && thisChar != '\0'))
             { // checks line hasn't finished
@@ -451,12 +462,12 @@ char *getTokens(char **file, int limit, char *path)
                 if (thisChar == '/' && nextChar == '/')
                 {
                     skip = true;
-                    thisChar = '\n';
                 }
-                if (thisChar == '/' && nextChar == '*')
+                if ((thisChar == '/' && nextChar == '*') )
                 {
                     commentMode = true;
                     longComment = true;
+                    skip=true;
                 }
                 if (commentMode)
                 {
@@ -471,9 +482,27 @@ char *getTokens(char **file, int limit, char *path)
                         skip = true;
                     }
                 }
-                // checks if the first character is a digit
 
-                if (!skip)
+                if(thisChar=='?' && stringCount==0){
+                    illegalSymbol = true;
+                }
+                
+                if(isdigit(thisChar)&&nextChar=='\n'){
+                    printf("CURRENT:%s\n",current);
+                    /*
+                    char *add;
+                    char *tokenString = malloc(sizeof(char) * 1024);
+                    char tempStr[2] = {line[0], '\0'};
+                    add = createToken(tempStr, path, lineNum, "SYMBOL", tokenString);
+                    strcat(tokens, add);
+                    free(tokenString);
+                    strcpy(current, "\0");
+                    tokenIndex++;
+                    */
+                }
+
+                // checks if the first character is a digit
+                if (!skip && !error)
                 {
                     if (isdigit(current[0]))
                     {
@@ -490,12 +519,9 @@ char *getTokens(char **file, int limit, char *path)
                         stringCount += 1;
                     }
                     finished = isFinished(thisChar, nextChar, firstDigit, stringCount, nextNextChar); // checks if nextChar
-                    if (stringCount == 2)
-                    {
-                        stringCount = 0;
-                    }
+                    
                     // is part of the same token as thisChar
-
+                    
                     if (stringStart)
                     {
                         if (nextChar != '"')
@@ -511,20 +537,27 @@ char *getTokens(char **file, int limit, char *path)
                         }
                         else
                         {
+                            
                             stringStart = false;
                             char *add;
                             char *tokenString = malloc(sizeof(char) * 1024);
-                            add = createToken(current, path, lineNum, getType(current, nextChar, stringStart, longComment, EOFile), tokenString);
+                            
+                            add = createToken(current, path, lineNum, getType(current, nextChar, stringCount, longComment, EOFile), tokenString);
+                            char *errorString = "ERR";
+                            if(strstr(getType(current, nextChar, stringCount, longComment, EOFile),errorString)){
+                                error = true;
+                            }
                             strcat(tokens, add);
                             tokens = realloc(tokens, sizeof(tokens) + sizeof(add));
                             free(tokenString);
                             tokenIndex++;
                             strcpy(current, "\0");
+                            
                         }
                     }
                     else
                     {
-
+                        
                         if (!finished)
                         { // if they're the same type then add to current token
 
@@ -554,7 +587,7 @@ char *getTokens(char **file, int limit, char *path)
                             if (stringCount == 1)
                             {
                                 int len = strlen(current);
-                                current[len] = nextChar;
+                                current[len] = thisChar;
                                 current[len + 1] = '\0';
                             }
                             else
@@ -602,58 +635,146 @@ char *getTokens(char **file, int limit, char *path)
                                     }
                                     if (isSymbolRet(nextNextChar))
                                     {
-                                        char *add;
-                                        char *tokenString = malloc(sizeof(char) * 1024);
-                                        add = createToken(current, path, lineNum, getType(current, nextChar, stringStart, longComment, EOFile), tokenString);
-                                        strcat(tokens, add);
-                                        free(tokenString);
-                                        tokenIndex++;
-                                        strcpy(current, "\0");
+                                        if(strcmp(current,"\"")){
+                                            char *add;
+                                            char *tokenString = malloc(sizeof(char) * 1024);
+                                            add = createToken(current, path, lineNum, getType(current, nextChar, stringCount, longComment, EOFile), tokenString);
+                                            char *errorString = "ERR";
+                                            if(strstr(getType(current, nextChar, stringCount, longComment, EOFile),errorString)){
+                                                error = true;
+                                                }
+                                            strcat(tokens, add);
+                                            free(tokenString);
+                                            tokenIndex++;
+                                            strcpy(current, "\0");
+                                        }
                                     }
                                 }
                             }
                         }
                         else
                         {
-
-                            // if white space or if the two
-                            // characters are of different types e.g. e and +
-                            if (stringStart)
-                            {
-                                stringStart = false;
-                            }
-                            if (!strchr(current, '\0'))
-                            {
-                                strcat(current, "\0");
-                            }
-                            char *newString = (char *)malloc(strlen(current));
-                            int j = 0;
-                            for (int i = 0; i < strlen(current); i++)
-                            {
-                                if (current[i] != '\n')
+                            
+                            if(strlen(current)!=0){
+                                
+                                // if white space or if the two
+                                // characters are of different types e.g. e and +
+                                if (stringStart)
                                 {
-                                    newString[j] = current[i];
-                                    j++;
+                                    stringStart = false;
                                 }
-                            }
-                            strcpy(current, newString);
-
-                            if (create(current))
-                            {
-                                char *add;
-                                char *tokenString = malloc(sizeof(char) * 1024);
-                                add = createToken(current, path, lineNum, getType(current, nextChar, stringStart, longComment, EOFile), tokenString);
-                                strcat(tokens, add);
-                                free(tokenString);
-                                // strcpy(current,"");
-                                tokenIndex++;
-
-                                strcpy(current, "\0");
-                            }
-                            else
-                            { // is symbol
-                                if (nextChar != ' ')
+                                if (!strchr(current, '\0'))
                                 {
+                                    strcat(current, "\0");
+                                }
+                                char *newString = (char *)malloc(strlen(current));
+                                int j = 0;
+                                for (int i = 0; i < strlen(current); i++)
+                                {
+                                    if (current[i] != '\n')
+                                    {
+                                        newString[j] = current[i];
+                                        j++;
+                                    }
+                                }
+                                strcpy(current, newString);
+                                
+                                if (create(current))
+                                {
+                                    char *add;
+                                    char *tokenString = malloc(sizeof(char) * 1024);
+                                    add = createToken(current, path, lineNum, getType(current, nextChar, stringCount, longComment, EOFile), tokenString);
+                                    char *errorString = "ERR";
+                                    if(strstr(getType(current, nextChar, stringCount, longComment, EOFile),errorString)){
+                                        error = true;
+                                    }
+                                    strcat(tokens, add);
+                                    free(tokenString);
+                                    tokenIndex++;
+                                    strcpy(current, "\0");
+                                    if(nextChar==')'){
+                                        current[0] = nextChar;
+                                        current[1] = '\0';
+                                        char *add;
+                                        char *tokenString = malloc(sizeof(char) * 1024);
+                                        add = createToken(current, path, lineNum, getType(current, nextChar, stringCount, longComment, EOFile), tokenString);
+                                        char *errorString = "ERR";
+                                        if(strstr(getType(current, nextChar, stringCount, longComment, EOFile),errorString)){
+                                            error = true;
+                                            }
+                                        strcat(tokens, add);
+                                        free(tokenString);
+                                        tokenIndex++;
+                                        strcpy(current, "\0");
+                                    }
+                                }
+                                else
+                                { // is symbol
+                                
+                                    if(current[0]=='"'){
+                                        
+                                        int len = strlen(current);
+                                        current[len] = '"';
+                                        current[len + 1] = '\0';
+                                        char *add;
+                                        char *tokenString = malloc(sizeof(char) * 1024);
+                                        add = createToken(current, path, lineNum, getType(current, nextChar, stringCount, longComment, EOFile), tokenString);
+                                        char *errorString = "ERR";
+                                        if(strstr(getType(current, nextChar, stringCount, longComment, EOFile),errorString)){
+                                            error = true;
+                                        }
+                                        strcat(tokens, add);
+                                        free(tokenString);
+                                        strcpy(current, "\0");
+                                        tokenIndex++;
+                                    }
+                                    if (nextChar != ' ')
+                                    {
+                                        if (nextChar == '/' && nextNextChar == '/')
+                                        {
+                                            thisChar = '\n';
+                                        }
+                                        else if (nextChar == '/' && thisChar == '*')
+                                        {
+                                            // if there is an end of multi line comment
+                                            strcpy(current, "\0");
+                                        }
+                                        else
+                                        {
+                                            strcpy(current, "\0");
+                                            if (!strchr(current, '\0'))
+                                            {
+                                                strcat(current, "\0");
+                                            }
+                                            int len = strlen(current);
+                                            current[len] = nextChar;
+                                            current[len + 1] = '\0';
+                                            char *add;
+                                            char *tokenString = malloc(sizeof(char) * 1024);
+                                            add = createToken(current, path, lineNum, getType(current, nextChar, stringCount, longComment, EOFile), tokenString);
+                                            char *errorString = "ERR";
+                                            if(strstr(getType(current, nextChar, stringCount, longComment, EOFile),errorString)){
+                                                error = true;
+                                            }
+                                            strcat(tokens, add);
+                                            free(tokenString);
+                                            strcpy(current, "\0");
+                                            tokenIndex++;
+                                        }
+                                    }
+                                }
+                            }else{
+                                
+                                bool cont = false;
+                                for (int i = 0; i < symbolSize; i++)
+                                {
+                                    if (symbolsChar[i] == nextChar)
+                                    {
+                                        
+                                        cont = true;
+                                    }
+                                }
+                                if(cont){
                                     if (nextChar == '/' && nextNextChar == '/')
                                     {
                                         thisChar = '\n';
@@ -665,21 +786,31 @@ char *getTokens(char **file, int limit, char *path)
                                     }
                                     else
                                     {
-                                        strcpy(current, "\0");
-                                        if (!strchr(current, '\0'))
-                                        {
-                                            strcat(current, "\0");
+                                        bool go = true;
+                                        if(nextChar == '/' && nextNextChar == '*'){
+                                            go = false;
                                         }
-                                        int len = strlen(current);
-                                        current[len] = nextChar;
-                                        current[len + 1] = '\0';
-                                        char *add;
-                                        char *tokenString = malloc(sizeof(char) * 1024);
-                                        add = createToken(current, path, lineNum, getType(current, nextChar, stringStart, longComment, EOFile), tokenString);
-                                        strcat(tokens, add);
-                                        free(tokenString);
-                                        strcpy(current, "\0");
-                                        tokenIndex++;
+                                        if(go){
+                                            strcpy(current, "\0");
+                                            if (!strchr(current, '\0'))
+                                            {
+                                                strcat(current, "\0");
+                                            }
+                                            int len = strlen(current);
+                                            current[len] = nextChar;
+                                            current[len + 1] = '\0';
+                                            char *add;
+                                            char *tokenString = malloc(sizeof(char) * 1024);
+                                            add = createToken(current, path, lineNum, getType(current, nextChar, stringCount, longComment, EOFile), tokenString);
+                                            char *errorString = "ERR";
+                                            if(strstr(getType(current, nextChar, stringCount, longComment, EOFile),errorString)){
+                                                error = true;
+                                            }
+                                            strcat(tokens, add);
+                                            free(tokenString);
+                                            strcpy(current, "\0");
+                                            tokenIndex++;
+                                        }
                                     }
                                 }
                             }
@@ -687,10 +818,15 @@ char *getTokens(char **file, int limit, char *path)
                     }
                 }
                 j++;
+                if (stringCount == 2)
+                {
+                    stringCount = 0;
+                }
             }
 
             charNum++;
         }
+        line = (file[i+1]);
         lineNum++;
     }
     char *tokenstring = "";
@@ -699,6 +835,7 @@ char *getTokens(char **file, int limit, char *path)
         char *add;
         char *tokenString = malloc(sizeof(char) * 1024);
         add = createToken("Error: unexpected eof in string constant", path, lineNum, "ERR", tokenString);
+        error = true;
         strcat(tokens, add);
         free(tokenString);
         tokenIndex++;
@@ -710,20 +847,36 @@ char *getTokens(char **file, int limit, char *path)
         char *add;
         char *tokenString = malloc(sizeof(char) * 1024);
         add = createToken("Error: unexpected eof in comment", path, lineNum, "ERR", tokenString);
+        error = true;
         strcat(tokens, add);
         free(tokenString);
         tokenIndex++;
         strcpy(current, "\0");
         return tokens;
     }
-    char *add;
-    char *tokenString2 = malloc(sizeof(char) * 1024);
-    add = createToken("End of File", path, lineNum, "EOFile", tokenString2);
-    strcat(tokens, add);
-    free(tokenString);
-    strcpy(current, "\0");
-    tokenIndex++;
+    if (illegalSymbol)
+    {
+        char *add;
+        char *tokenString = malloc(sizeof(char) * 1024);
+        add = createToken("Error: illegal symbol in source file", path, lineNum, "ERR", tokenString);
+        error = true;
+        strcat(tokens, add);
+        free(tokenString);
+        tokenIndex++;
+        strcpy(current, "\0");
+        return tokens;
+    }
+    if(!error){
+        char *add;
+        char *tokenString2 = malloc(sizeof(char) * 1024);
+        add = createToken("End of File", path, lineNum, "EOFile", tokenString2);
+        strcat(tokens, add);
+        free(tokenString);
+        strcpy(current, "\0");
+        tokenIndex++; 
+    }
     return tokens;
+    
 }
 
 bool create(char *current)
@@ -762,14 +915,15 @@ bool create(char *current)
 
 bool isFinished(char thisChar, char nextChar, bool firstDigit, int stringCount, char nextNextChar)
 { // checks if token is finished
-
     if (stringCount == 2)
     {
         return true;
+    }else if(stringCount == 1){
+        return false;
     }
     if (stringCount != 1)
     {
-        if (nextChar == ' ')
+        if (nextChar == ' '||nextChar == '\n'||nextChar == '\t')
         { // checks for white space
             return true;
         }
@@ -793,6 +947,7 @@ bool isFinished(char thisChar, char nextChar, bool firstDigit, int stringCount, 
         {
             if (symbolsChar[i] == nextChar)
             {
+                
                 return true;
             }
         }
@@ -813,8 +968,48 @@ bool isSymbolRet(char thisChar)
     return false;
 }
 
-char *getType(char *current, char nextChar, bool stringStart, bool longComment, bool EOFile)
+char *getType(char *current, char nextChar, int stringCount, bool longComment, bool EOFile)
 { // gets type of token str
+    if ((stringCount>0) && (nextChar == '\n'))
+    {
+        return "ERR_STR_LN";
+    }
+    for (int i = 0; i < symbolSize; i++)
+    {
+        
+        if (!strcmp(current, symbols[i]))
+        {
+            return "SYMBOL";
+        }
+    }
+    if(stringCount>2){
+        return "STRING";
+    }
+
+    char newString[1024];
+    int counter = 0;
+    if (!strchr(current, '\0'))
+    {
+        strcat(current, "\0");
+    }
+    if (current == NULL)
+    {
+        strcpy(current, "\0");
+    }
+    for (int i = 0; i < strlen(current); i++)
+    {
+        if (current[i] == '\r' || current[i] == '\t'|| current[i] == '\n')
+        {
+        }
+        else
+        {
+            newString[counter] = current[i];
+            counter++;
+        }
+    }
+    newString[counter] = '\0';
+    strcpy(current,newString);
+
     for (int i = 0; i < keywordSize; i++)
     {
         if (!strcmp(current, keywords[i]))
@@ -822,13 +1017,7 @@ char *getType(char *current, char nextChar, bool stringStart, bool longComment, 
             return "RESWORD";
         }
     }
-    for (int i = 0; i < symbolSize; i++)
-    {
-        if (!strcmp(current, symbols[i]))
-        {
-            return "SYMBOL";
-        }
-    }
+    
     bool integer = true;
     if (!strchr(current, '\0'))
     {
@@ -850,15 +1039,19 @@ char *getType(char *current, char nextChar, bool stringStart, bool longComment, 
         return "INT";
     }
 
-    if ((stringStart) && (nextChar == '\n' || EOFile))
+    
+
+    if ((stringCount>0) && (EOFile))
     {
         return "ERR_STR";
     }
+
+
     if ((longComment) && EOF)
     {
         return "ERR_CMT";
     }
-    if (nextChar == '?')
+    if (strchr(current,'?')&&stringCount==0)
     {
         return "ERR_ILL";
     }
@@ -867,11 +1060,19 @@ char *getType(char *current, char nextChar, bool stringStart, bool longComment, 
 
 char *createToken(char *current, char *file, int lineNumber, char *tokenType, char *tokenString)
 {
+    
     if (!strcmp(tokenType, "ERR_STR"))
     {
         current = "Error: unexpected eof in string constant\0";
         tokenType = "ERR";
     }
+
+    if (!strcmp(tokenType, "ERR_STR_LN"))
+    {
+        current = "Error: new line in string constant\0";
+        tokenType = "ERR";
+    }
+
     if (!strcmp(tokenType, "ERR_ILL"))
     {
         current = "Error: illegal symbol in source file\0";
@@ -884,9 +1085,15 @@ char *createToken(char *current, char *file, int lineNumber, char *tokenType, ch
     }
     if (current[0] == '"')
     {
+        
         current++;
+        if(current[0]=='"'){
+            current++;
+        }
         int len = strlen(current);
-        current[len - 1] = '\0';
+        if(current[len-1]!=' '){
+            current[len-1] = '\0';
+        }
         tokenType = "STRING";
     }
     char newString[1024];
@@ -901,7 +1108,7 @@ char *createToken(char *current, char *file, int lineNumber, char *tokenType, ch
     }
     for (int i = 0; i < strlen(current); i++)
     {
-        if (current[i] == '\r' || current[i] == '\t')
+        if (current[i] == '\r' || current[i] == '\t'|| current[i] == '\n')
         {
         }
         else
